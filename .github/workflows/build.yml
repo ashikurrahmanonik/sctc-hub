@@ -25,11 +25,15 @@ jobs:
       - run: npx cap add android
       - run: pip install pillow && python3 scripts/smallicon.py && python3 scripts/android_patch.py ${{ matrix.app }}
       - name: Secrets
-        env: { GS: '${{ secrets.GOOGLE_SERVICES_JSON }}', KS: '${{ secrets.DEBUG_KEYSTORE }}' }
+        env: { GS: '${{ secrets.GOOGLE_SERVICES_JSON }}', KS: '${{ secrets.DEBUG_KEYSTORE }}', APP: '${{ matrix.app }}' }
         run: |
           test -n "$GS" || { echo "Add GOOGLE_SERVICES_JSON secret"; exit 1; }
+          test -n "$KS" || { echo "Add DEBUG_KEYSTORE secret (needed so app updates can install)"; exit 1; }
           printf '%s' "$GS" > android/app/google-services.json
-          if [ -n "$KS" ]; then mkdir -p ~/.android; echo "$KS" | base64 -d > ~/.android/debug.keystore; fi
+          PKG=hub; [ "$APP" = "admin" ] && PKG=admin
+          grep -q "bd.pro.sabujcomputers.$PKG" android/app/google-services.json || { echo "google-services.json has no app bd.pro.sabujcomputers.$PKG"; exit 1; }
+          mkdir -p ~/.android; echo "$KS" | base64 -d > ~/.android/debug.keystore
+          keytool -list -keystore ~/.android/debug.keystore -storepass android | grep -i fingerprint
       - run: npx capacitor-assets generate --android --iconBackgroundColor '#ffffff'
       - run: npx cap sync android
       - run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
