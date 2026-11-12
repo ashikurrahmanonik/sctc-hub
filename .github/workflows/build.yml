@@ -1,0 +1,41 @@
+name: Build APK
+on:
+  push: { branches: [main, master], paths-ignore: ['*.zip', 'README.md'] }
+  workflow_run: { workflows: ['Extract ZIP'], types: [completed] }
+  workflow_dispatch:
+permissions: { contents: write }
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    strategy: { fail-fast: false, matrix: { app: [admin, student] } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm install --no-audit --no-fund
+      - run: node scripts/prep.cjs ${{ matrix.app }}
+      - run: npm run build
+        env:
+          VITE_APP: ${{ matrix.app }}
+          VITE_BUILD: ${{ github.run_number }}
+          VITE_REPO: ${{ github.repository }}
+      - run: npx cap add android
+      - run: pip install pillow && python3 scripts/smallicon.py
+      - name: Secrets
+        env: { GS: '${{ secrets.GOOGLE_SERVICES_JSON }}', KS: '${{ secrets.DEBUG_KEYSTORE }}' }
+        run: |
+          test -n "$GS" || { echo "Add GOOGLE_SERVICES_JSON secret"; exit 1; }
+          printf '%s' "$GS" > android/app/google-services.json
+          if [ -n "$KS" ]; then mkdir -p ~/.android; echo "$KS" | base64 -d > ~/.android/debug.keystore; fi
+      - run: npx capacitor-assets generate --android --iconBackgroundColor '#ffffff'
+      - run: npx cap sync android
+      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - run: cp android/app/build/outputs/apk/debug/app-debug.apk ${{ matrix.app }}.apk
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ matrix.app }}
+          name: build ${{ github.run_number }}
+          files: ${{ matrix.app }}.apk
