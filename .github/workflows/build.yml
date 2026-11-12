@@ -23,7 +23,7 @@ jobs:
           VITE_BUILD: ${{ github.run_number }}
           VITE_REPO: ${{ github.repository }}
       - run: npx cap add android
-      - run: pip install pillow && python3 scripts/smallicon.py
+      - run: pip install pillow && python3 scripts/smallicon.py && python3 scripts/android_patch.py ${{ matrix.app }}
       - name: Secrets
         env: { GS: '${{ secrets.GOOGLE_SERVICES_JSON }}', KS: '${{ secrets.DEBUG_KEYSTORE }}' }
         run: |
