@@ -76,6 +76,7 @@ public class SctcMessagingService extends MessagingService {
                 b.setStyle(new NotificationCompat.BigPictureStyle()
                         .bigPicture(pic)
                         .bigLargeIcon((Bitmap) null)
+                        .setBigContentTitle(title)
                         .setSummaryText(body));
             } else {
                 b.setStyle(new NotificationCompat.BigTextStyle().bigText(body));
