@@ -23,7 +23,9 @@ jobs:
           VITE_BUILD: ${{ github.run_number }}
           VITE_REPO: ${{ github.repository }}
       - run: npx cap add android
-      - run: pip install pillow && python3 scripts/smallicon.py && python3 scripts/android_patch.py ${{ matrix.app }}
+      - name: Android patches
+        env: { BUILD_NUMBER: '${{ github.run_number }}' }
+        run: pip install pillow && python3 scripts/smallicon.py && python3 scripts/android_patch.py ${{ matrix.app }}
       - name: Secrets
         env: { GS: '${{ secrets.GOOGLE_SERVICES_JSON }}', KS: '${{ secrets.DEBUG_KEYSTORE }}', APP: '${{ matrix.app }}' }
         run: |
@@ -32,11 +34,19 @@ jobs:
           printf '%s' "$GS" > android/app/google-services.json
           PKG=hub; [ "$APP" = "admin" ] && PKG=admin
           grep -q "bd.pro.sabujcomputers.$PKG" android/app/google-services.json || { echo "google-services.json has no app bd.pro.sabujcomputers.$PKG"; exit 1; }
-          mkdir -p ~/.android; echo "$KS" | base64 -d > ~/.android/debug.keystore
-          keytool -list -keystore ~/.android/debug.keystore -storepass android | grep -i fingerprint
+          echo "$KS" | tr -d ' \r\n' | base64 -d > android/app/sctc.keystore
+          FP=$(keytool -list -v -keystore android/app/sctc.keystore -storepass android -alias androiddebugkey | grep -i "SHA1:" | head -1 | sed 's/.*SHA1: *//')
+          echo "Keystore SHA-1: $FP"
+          [ "$FP" = "6A:25:6B:D7:93:4C:B4:6E:75:C0:78:B2:F1:60:DA:38:53:5A:08:25" ] || { echo "DEBUG_KEYSTORE secret is wrong (SHA-1 does not match). Paste the full text of 6_DEBUG_KEYSTORE_secret.txt"; exit 1; }
       - run: npx capacitor-assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#ffffff'
       - run: npx cap sync android
       - run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - name: Verify APK signature
+        run: |
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+          if [ -z "$APKSIGNER" ]; then echo "apksigner not found, skipping check"; exit 0; fi
+          "$APKSIGNER" verify --print-certs android/app/build/outputs/apk/debug/app-debug.apk | grep -i "SHA-1"
+          "$APKSIGNER" verify --print-certs android/app/build/outputs/apk/debug/app-debug.apk | grep -qi "6a256bd7934cb46e75c078b2f160da38535a0825" || { echo "APK is NOT signed with the fixed key"; exit 1; }
       - run: cp android/app/build/outputs/apk/debug/app-debug.apk ${{ matrix.app }}.apk
       - uses: softprops/action-gh-release@v2
         with:
