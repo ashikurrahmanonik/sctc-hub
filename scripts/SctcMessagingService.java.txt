@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
@@ -49,6 +50,8 @@ public class SctcMessagingService extends MessagingService {
 
         Intent open = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
         open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        open.setAction(Intent.ACTION_VIEW);
+        open.setData(Uri.parse("sctc://post/" + id));
         open.putExtra("google.message_id", "sctc-" + id);
         open.putExtra("id", id);
         int nid = (id.isEmpty() ? String.valueOf(System.nanoTime()) : id).hashCode();
