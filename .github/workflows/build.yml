@@ -34,7 +34,7 @@ jobs:
           grep -q "bd.pro.sabujcomputers.$PKG" android/app/google-services.json || { echo "google-services.json has no app bd.pro.sabujcomputers.$PKG"; exit 1; }
           mkdir -p ~/.android; echo "$KS" | base64 -d > ~/.android/debug.keystore
           keytool -list -keystore ~/.android/debug.keystore -storepass android | grep -i fingerprint
-      - run: npx capacitor-assets generate --android --iconBackgroundColor '#ffffff'
+      - run: npx capacitor-assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#ffffff'
       - run: npx cap sync android
       - run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
       - run: cp android/app/build/outputs/apk/debug/app-debug.apk ${{ matrix.app }}.apk
