@@ -76,7 +76,7 @@ label{font-size:12px;font-weight:600;color:var(--m);display:flex;gap:6px;align-i
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}.stats div{background:var(--card);border-radius:16px;padding:12px 6px;text-align:center;box-shadow:var(--sh)}.stats b{display:block;font-size:19px;color:var(--g)}.stats small{color:var(--m);font-size:11.5px}
 .ucard .uh{display:flex;align-items:center;gap:12px}.ucard .av{width:48px;height:48px;font-size:19px;margin:0;border-width:2px}.ucard small{color:var(--m);display:block;font-size:12px}.ucard select{margin-top:10px}
 .ver{text-align:center;color:var(--m);font-size:12px;margin:8px 0}
-.upd{display:block;background:#fff3cd;color:#664d03;padding:10px;text-align:center;font-weight:600;text-decoration:none;margin:10px 14px 0;border-radius:14px}
+.upd{display:block;width:calc(100% - 28px);border:0;background:#fff3cd;color:#664d03;padding:11px;text-align:center;font:inherit;font-weight:600;margin:10px 14px 0;border-radius:14px}
 .toast{position:fixed;left:50%;bottom:104px;transform:translateX(-50%);background:#10201a;color:#fff;padding:11px 18px;border-radius:99px;z-index:99;max-width:90%;text-align:center;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 
 /* v4 additions */

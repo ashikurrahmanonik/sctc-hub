@@ -4,6 +4,8 @@ import {initializeFirestore,persistentLocalCache,collection,doc,setDoc,getDoc,ge
 import {Capacitor} from '@capacitor/core';
 import {App as CapApp} from '@capacitor/app';
 import {StatusBar,Style} from '@capacitor/status-bar';
+import {Filesystem,Directory} from '@capacitor/filesystem';
+import {FileOpener} from '@capacitor-community/file-opener';
 import {FirebaseMessaging} from '@capacitor-firebase/messaging';
 import {FirebaseAuthentication} from '@capacitor-firebase/authentication';
 import '@fontsource/inter/latin-400.css';import '@fontsource/inter/latin-600.css';import '@fontsource/inter/latin-700.css';
@@ -75,6 +77,8 @@ addType:['+ Add type','+ নতুন ধরন'],resetTypes:['Reset to default 
 stSent:['Published','প্রকাশিত'],stSch:['Scheduled','শিডিউলড'],dup:['Duplicate','কপি'],tplT:['Quick templates','দ্রুত টেমপ্লেট'],
 notifOff:['Notifications are off. Turn them on to get notices instantly.','নোটিফিকেশন বন্ধ আছে। নোটিশ সাথে সাথে পেতে চালু করুন।'],notifBtn:['Turn on','চালু করুন'],notifHow:['Open Settings → Apps → SCTC Resources Hub → Notifications','সেটিংস → অ্যাপ → SCTC Resources Hub → নোটিফিকেশন চালু করুন'],
 tipsT:['Not getting notifications?','নোটিফিকেশন আসছে না?'],tipsB:['Keep internet on and allow notifications. In phone Settings set Battery to “No restrictions” and turn on Autostart (Xiaomi / Oppo / Vivo). If you were offline, missed notices arrive when you reconnect and also show in the app marked NEW.','ইন্টারনেট চালু রাখুন ও নোটিফিকেশন অনুমতি দিন। ফোনের সেটিংসে ব্যাটারি “No restrictions” করুন এবং অটোস্টার্ট চালু করুন (Xiaomi / Oppo / Vivo)। অফলাইনে থাকলে মিস হওয়া নোটিশ ইন্টারনেট এলে নোটিফিকেশনে আসবে এবং অ্যাপে “নতুন” হিসেবে দেখাবে।'],
+downloading:['Downloading update','আপডেট ডাউনলোড হচ্ছে'],installing:['Opening installer…','ইনস্টলার খুলছে…'],updFail:['Update failed','আপডেট ব্যর্থ'],
+googleHint:['Google sign-in failed (error 10). Install the newest APK from the GitHub release (uninstall the old one first), then try again.','Google সাইন ইন হয়নি (error 10)। আগের অ্যাপ আনইনস্টল করে GitHub Release থেকে সর্বশেষ APK ইনস্টল করে আবার চেষ্টা করুন।'],
 typeNeed:['Keep at least one type','অন্তত একটি ধরন রাখুন'],resetConfirm:['Reset all types to default?','সব ধরন ডিফল্টে ফিরিয়ে নেবেন?']
 };
 const T=k=>D[k]?D[k][lang==='bn'?1:0]:k;
@@ -86,7 +90,7 @@ const BASE=[
  {id:'holiday',e:'🏖️',en:'Holiday',bn:'ছুটি',c:'#0e7490',k:'dates'},{id:'event',e:'🎉',en:'Event',bn:'অনুষ্ঠান',c:'#c2410c',k:'plain'},
  {id:'job',e:'💼',en:'Job circular',bn:'চাকরির বিজ্ঞপ্তি',c:'#6d28d9',k:'deadline'},{id:'offer',e:'🎁',en:'Offer',bn:'অফার',c:'#be185d',k:'deadline'},
  {id:'result',e:'🏆',en:'Result',bn:'ফলাফল',c:'#a16207',k:'plain'},{id:'class',e:'🏫',en:'Class update',bn:'ক্লাস আপডেট',c:'#0f766e',k:'plain'}];
-const S={tab:HOME,ann:[],inbox:[],users:[],cfg:{},me:null,edit:null,open:null,f:'',un:[],roleSel:'student',complete:false,ready:{},rc:{},sy:0,pending:null,draft:null,notifOff:false};
+const S={tab:HOME,ann:[],inbox:[],users:[],cfg:{},me:null,edit:null,open:null,f:'',un:[],roleSel:'student',complete:false,ready:{},rc:{},sy:0,pending:null,draft:null,notifOff:false,upd:null,updBusy:false};
 const hexOk=c=>/^#[0-9a-f]{6}$/i.test(c||'')?c:'#0b6b2b';
 const getTypes=()=>Array.isArray(S.cfg.types)&&S.cfg.types.length?S.cfg.types:BASE;
 const tyOf=id=>getTypes().find(x=>x.id===id)||BASE.find(x=>x.id===id)||{id,e:'📌',en:String(id),bn:String(id),c:'#0b6b2b',k:'plain'};
@@ -202,7 +206,22 @@ async function chk(){
   if(!REPO||!BUILD||!native)return;
   try{const r=await (await fetch(`https://api.github.com/repos/${REPO}/releases/tags/${ADMIN?'admin':'student'}`)).json();
     const n=+String(r.name).replace(/\D/g,'');const u=r.assets?.[0]?.browser_download_url;
-    if(n>BUILD&&u){const e=document.getElementById('upd');if(e)e.innerHTML=`<a class="upd" href="${esc(u)}" target="_blank" rel="noopener">⬆ ${T('upd')}</a>`}}catch{}
+    if(n>BUILD&&u){S.upd={url:u,n};soft()}}catch{}
+}
+const updBar=()=>S.upd?`<button class="upd" data-act="doupdate">⬆ ${T('upd')} (${S.upd.n})</button>`:'';
+async function doUpdate(){
+  if(!S.upd||S.updBusy)return;S.updBusy=true;
+  const set=t=>{const e=document.querySelector('#upd .upd');if(e)e.textContent=t};
+  let h;
+  try{
+    online();
+    h=await Filesystem.addListener('progress',p=>{if(p.contentLength>0)set(`⬇ ${T('downloading')} ${Math.round(p.bytes/p.contentLength*100)}%`)});
+    set(`⬇ ${T('downloading')}…`);
+    const r=await Filesystem.downloadFile({url:S.upd.url,path:'sctc-update.apk',directory:Directory.Cache,progress:true});
+    set(T('installing'));
+    await FileOpener.open({filePath:r.path,contentType:'application/vnd.android.package-archive'});
+  }catch(x){toast(T('updFail')+': '+err(x),6000)}
+  finally{S.updBusy=false;if(h)h.remove();render()}
 }
 const netUI=()=>{const e=document.getElementById('net');if(e)e.hidden=navigator.onLine};
 addEventListener('online',netUI);addEventListener('offline',netUI);
@@ -358,7 +377,7 @@ function render(){
   const tabs=ADMIN?[['send','send',T('send')],['posts','list',T('posts')],['fees','card',T('fees')],['users','users',T('users')],['set','set',T('settings')]]:[['home','home',T('home')],['jobs','jobs',T('jobs')],['me','user',T('profile')]];
   const body={send:composeV,posts:()=>feedV(false),fees:feeV,users:usersV,set:setV,home:()=>feedV(false),jobs:()=>feedV(true),me:meV}[S.tab]();
   const n=ADMIN?0:unread();
-  app.innerHTML=`<header><img src="logo.png" alt=""><div class="ht"><b>${NAME}</b></div>${langBtn()}</header><div id="net" ${navigator.onLine?'hidden':''}>${T('offBanner')}</div><div id="upd"></div><main>${body}</main>
+  app.innerHTML=`<header><img src="logo.png" alt=""><div class="ht"><b>${NAME}</b></div>${langBtn()}</header><div id="net" ${navigator.onLine?'hidden':''}>${T('offBanner')}</div><div id="upd">${updBar()}</div><main>${body}</main>
   <nav>${tabs.map(([k,i,l])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}"><span class="ni">${ic(i,22)}${k==='home'&&n?`<em>${n>99?'99+':n}</em>`:''}</span>${l}</button>`).join('')}</nav>`;
   const f=document.getElementById('send');
   if(f){const a=S.edit||S.draft;if(a){f.typ.value=a.type;const x=a.audience?.[0]||'student';f.aud.value=x.startsWith('u_')?'users':x.startsWith('b_')?'batch':x}viewSel(f)}
@@ -457,6 +476,7 @@ const ACT={
   lang(){lang=lang==='bn'?'en':'bn';jset('lang',lang);document.documentElement.lang=lang;rerender()},
   setlang(_,el){lang=el.dataset.v;jset('lang',lang);document.documentElement.lang=lang;rerender()},
   theme(_,el){theme=el.dataset.v;jset('theme',theme);applyTheme();render()},
+  doupdate(){return doUpdate()},
   mode(_,el){mode=el.dataset.m;authV()},
   role(_,el){S.roleSel=el.dataset.r;const f=document.getElementById('auth'),v=[f.n.value,f.e.value];authV();const g=document.getElementById('auth');g.n.value=v[0];g.e.value=v[1]},
   eye(_,el){const i=el.parentNode.querySelector('input');i.type=i.type==='password'?'text':'password'},
@@ -465,7 +485,7 @@ const ACT={
     try{
       if(native){const r=await googleNative();await signInWithCredential(auth,GoogleAuthProvider.credential(r.credential?.idToken))}
       else await signInWithPopup(auth,new GoogleAuthProvider());
-    }catch(x){toast(err(x))}
+    }catch(x){const m=String(x?.message||x);toast(/(^|\D)10(\D|$)|DEVELOPER/i.test(m)?T('googleHint'):m.slice(0,160),7000)}
   },
   async logout(){
     if(native&&!ADMIN&&S.user&&S.me)for(const t of [...topicsOf(S.me),'student','public'])try{await FirebaseMessaging.unsubscribeFromTopic({topic:t})}catch{}
