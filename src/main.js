@@ -79,6 +79,7 @@ notifOff:['Notifications are off. Turn them on to get notices instantly.','ন�
 tipsT:['Not getting notifications?','নোটিফিকেশন আসছে না?'],tipsB:['Keep internet on and allow notifications. In phone Settings set Battery to “No restrictions” and turn on Autostart (Xiaomi / Oppo / Vivo). If you were offline, missed notices arrive when you reconnect and also show in the app marked NEW.','ইন্টারনেট চালু রাখুন ও নোটিফিকেশন অনুমতি দিন। ফোনের সেটিংসে ব্যাটারি “No restrictions” করুন এবং অটোস্টার্ট চালু করুন (Xiaomi / Oppo / Vivo)। অফলাইনে থাকলে মিস হওয়া নোটিশ ইন্টারনেট এলে নোটিফিকেশনে আসবে এবং অ্যাপে “নতুন” হিসেবে দেখাবে।'],
 downloading:['Downloading update','আপডেট ডাউনলোড হচ্ছে'],installing:['Opening installer…','ইনস্টলার খুলছে…'],updFail:['Update failed','আপডেট ব্যর্থ'],
 googleHint:['Google sign-in failed (error 10). Install the newest APK from the GitHub release (uninstall the old one first), then try again.','Google সাইন ইন হয়নি (error 10)। আগের অ্যাপ আনইনস্টল করে GitHub Release থেকে সর্বশেষ APK ইনস্টল করে আবার চেষ্টা করুন।'],
+loading:['Loading…','লোড হচ্ছে…'],signingIn:['Signing you in…','সাইন ইন হচ্ছে…'],
 typeNeed:['Keep at least one type','অন্তত একটি ধরন রাখুন'],resetConfirm:['Reset all types to default?','সব ধরন ডিফল্টে ফিরিয়ে নেবেন?']
 };
 const T=k=>D[k]?D[k][lang==='bn'?1:0]:k;
@@ -226,6 +227,15 @@ async function doUpdate(){
 const netUI=()=>{const e=document.getElementById('net');if(e)e.hidden=navigator.onLine};
 addEventListener('online',netUI);addEventListener('offline',netUI);
 
+/* ---------- loading feedback ---------- */
+async function run(btn,fn){ // spinner + disabled while an action is running (blocks double taps)
+  if(!btn||btn.dataset.busy)return;
+  btn.dataset.busy='1';const html=btn.innerHTML;btn.classList.add('busy');btn.disabled=true;btn.innerHTML='<i class="sp"></i>'+html;
+  try{return await fn()}
+  finally{if(btn.isConnected){btn.innerHTML=html;btn.classList.remove('busy');btn.disabled=false;delete btn.dataset.busy}}
+}
+const LONG=new Set(['gg','fg','resend','usave','rmuser','reset']);
+const loadV=msg=>{app.innerHTML=`<div class="boot"><img class="a-logo pulse" src="logo.png" alt=""><div class="sp lg"></div><p>${msg||T('loading')}</p></div>`};
 /* ---------- auth screens ---------- */
 const langBtn=cls=>`<button class="lang ${cls||''}" data-act="lang">${lang==='bn'?'EN':'বাং'}</button>`;
 function authV(){
@@ -404,7 +414,6 @@ function audOf(f){
   const l=[...f.querySelectorAll('.uc:checked')].map(c=>'u_'+c.value);if(!l.length)throw Error(T('errSel'));if(l.length>40)throw Error(T('errMax40'));return {audience:l};
 }
 async function doSend(f){
-  const b=f.querySelector('.send');b.disabled=true;b.textContent=T('working');
   try{
     online();
     const old=S.edit||{},base=S.edit||S.draft||{},cv=f.cvr.files[0],fl=[...f.att.files];
@@ -429,10 +438,9 @@ async function doSend(f){
       else m+=T('remLate');
     }
     toast(m);S.edit=null;S.draft=null;S.tab='posts';S.rc={};render();
-  }catch(x){toast(err(x));b.disabled=false;b.textContent=T('sendBtn')}
+  }catch(x){toast(err(x))}
 }
 async function doFee(f){
-  const b=f.querySelector('.send');b.disabled=true;
   try{
     online();
     const ids=[...f.querySelectorAll('.fc:checked')].map(c=>c.value);
@@ -445,7 +453,6 @@ async function doFee(f){
     }));
     await post({items});toast(T('remSent')+' ('+ids.length+')');
   }catch(x){toast(err(x))}
-  b.disabled=false;
 }
 async function doProf(f){
   try{
@@ -461,6 +468,7 @@ async function doAuth(f){
   try{
     if(mode==='up'){S.signup={n:f.n.value.trim(),r:S.roleSel};await createUserWithEmailAndPassword(auth,f.e.value.trim(),f.p.value)}
     else await signInWithEmailAndPassword(auth,f.e.value.trim(),f.p.value);
+    loadV(T('signingIn'));
   }catch(x){S.signup=null;toast(err(x))}
 }
 async function saveCfg(patch){online();await setDoc(doc(db,'settings','main'),patch,{merge:true});S.cfg={...S.cfg,...patch}}
@@ -485,6 +493,7 @@ const ACT={
     try{
       if(native){const r=await googleNative();await signInWithCredential(auth,GoogleAuthProvider.credential(r.credential?.idToken))}
       else await signInWithPopup(auth,new GoogleAuthProvider());
+      loadV(T('signingIn'));
     }catch(x){const m=String(x?.message||x);toast(/(^|\D)10(\D|$)|DEVELOPER/i.test(m)?T('googleHint'):m.slice(0,160),7000)}
   },
   async logout(){
@@ -525,12 +534,14 @@ app.onclick=async e=>{
   const tb=e.target.closest('[data-tab]');
   if(tb){S.tab=tb.dataset.tab;S.open=null;S.edit=null;S.draft=null;S.f='';if(S.tab==='posts')S.rc={};render();return scrollTo(0,0)}
   const el=e.target.closest('[data-act]');
-  if(el){const h=el.closest('[data-id],[data-uid]');try{await ACT[el.dataset.act](h?.dataset.id||h?.dataset.uid||el.dataset.id,el)}catch(x){toast(err(x))}return}
+  if(el){const h=el.closest('[data-id],[data-uid]'),a=el.dataset.act,go=()=>ACT[a](h?.dataset.id||h?.dataset.uid||el.dataset.id,el);try{await (LONG.has(a)?run(el,go):go())}catch(x){toast(err(x))}return}
   const c=e.target.closest('[data-open]');if(c&&!ADMIN){openPost(c.dataset.id);render();scrollTo(0,0)}
 };
-app.onsubmit=async e=>{e.preventDefault();const f=e.target;
-  if(f.id==='auth')doAuth(f);else if(f.id==='send')doSend(f);else if(f.id==='prof')doProf(f);else if(f.id==='fee')doFee(f);else if(f.id==='types')doTypes(f);
-  else if(f.id==='set'){try{await saveCfg({cloud:f.c.value.trim(),preset:f.p.value.trim(),workerUrl:f.w.value.trim(),phone:f.tel.value.trim()});toast(T('savedOk'))}catch(x){toast(err(x))}}};
+async function doSet(f){try{await saveCfg({cloud:f.c.value.trim(),preset:f.p.value.trim(),workerUrl:f.w.value.trim(),phone:f.tel.value.trim()});toast(T('savedOk'))}catch(x){toast(err(x))}}
+const FORMS={auth:doAuth,send:doSend,prof:doProf,fee:doFee,types:doTypes,set:doSet};
+app.onsubmit=e=>{e.preventDefault();const f=e.target,h=FORMS[f.id];if(!h)return;
+  run(e.submitter||f.querySelector('button:not([type="button"])'),()=>h(f))};
+
 app.onchange=async e=>{const el=e.target;
   if(el.name==='aud'||el.name==='typ')viewSel(el.form);
   if(el.name==='r'&&el.form?.id==='prof'){const s=el.value==='student',f=el.form;f.querySelector('.n-stu').hidden=!s;f.querySelector('.n-cus').hidden=s;f.v.required=s;f.querySelector('.vl').textContent=s?T('village'):T('address')}
@@ -555,6 +566,7 @@ function start(){
 }
 async function enter(u){
   clr();S.user=u;if(!u)return authV();
+  loadV(T('signingIn'));
   try{
     if(ADMIN){const a=await getDoc(doc(db,'admins',u.uid));if(!a.exists()){toast(T('notAdmin'));return signOut(auth)}}
     else{
