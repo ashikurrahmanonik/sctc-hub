@@ -99,6 +99,15 @@ errExam:['Enter exam name and total marks','পরীক্ষার নাম �
 resSent:['Results published','ফলাফল প্রকাশিত'],resNoBatch:['Choose a batch','একটি ব্যাচ বাছাই করুন'],gradeScale:['Grade scale (min %:grade, comma separated)','গ্রেড স্কেল (ন্যূনতম %:গ্রেড, কমা দিয়ে)'],
 coursesT:['Courses','কোর্স'],coursesHint:['Courses students can choose from.','শিক্ষার্থীরা যে কোর্স বাছাই করতে পারবে।'],addCourse:['+ Add course','+ নতুন কোর্স'],
 retopicFail:['Saved. Live notification groups update when the student opens the app.','সেভ হয়েছে। শিক্ষার্থী অ্যাপ খুললে নোটিফিকেশন গ্রুপ আপডেট হবে।'],
+newTab:['New','নতুন'],tplTab:['Templates','টেমপ্লেট'],newTplB:['+ New template','+ নতুন টেমপ্লেট'],newTpl:['New template','নতুন টেমপ্লেট'],editTpl:['Edit template','টেমপ্লেট এডিট'],
+tplName:['Template name','টেমপ্লেটের নাম'],saveTpl:['💾 Save as template','💾 টেমপ্লেট হিসেবে সেভ করুন'],saveTplBtn:['Save template','টেমপ্লেট সেভ করুন'],tplSaved:['Template saved ✓','টেমপ্লেট সেভ হয়েছে ✓'],
+errTplName:['Enter a template name','টেমপ্লেটের নাম দিন'],sendNow:['Send now','এখনই পাঠান'],useTpl:['Use','ব্যবহার'],
+noTpl:['No templates yet. Write a message and tap "Save as template".','এখনো কোনো টেমপ্লেট নেই। বার্তা লিখে "টেমপ্লেট হিসেবে সেভ করুন" চাপুন।'],
+tplSendC:['Send "{n}" now to {a}?','"{n}" এখনই {a} কে পাঠাবেন?'],tplNoAud:['This template has no audience. Edit it and choose who to send to.','এই টেমপ্লেটে কাকে পাঠাবেন ঠিক করা নেই। এডিট করে বেছে নিন।'],
+tplDelC:['Delete this template?','এই টেমপ্লেট মুছবেন?'],preview:['Notification preview','নোটিফিকেশন প্রিভিউ'],rmCover:['Remove cover image','কভার ছবি সরান'],tplSet:['Message templates','বার্তার টেমপ্লেট'],
+gMorning:['Good morning','শুভ সকাল'],gAfternoon:['Good afternoon','শুভ অপরাহ্ন'],gEvening:['Good evening','শুভ সন্ধ্যা'],gNight:['Hello','হ্যালো'],
+cdToday:['Today','আজ'],cdTomorrow:['Tomorrow','আগামীকাল'],cdDays:['days left','দিন বাকি'],idStudent:['STUDENT ID','শিক্ষার্থী আইডি'],idMember:['MEMBER','সদস্য'],
+shareApp:['Share this app','অ্যাপটি শেয়ার করুন'],shareTxt:['Download SCTC Resources Hub for notices, results and updates.','নোটিশ, ফলাফল ও আপডেটের জন্য SCTC Resources Hub ডাউনলোড করুন।'],
 typeNeed:['Keep at least one type','অন্তত একটি ধরন রাখুন'],resetConfirm:['Reset all types to default?','সব ধরন ডিফল্টে ফিরিয়ে নেবেন?']
 };
 const T=k=>D[k]?D[k][lang==='bn'?1:0]:k;
@@ -111,7 +120,7 @@ const BASE=[
  {id:'job',e:'💼',en:'Job circular',bn:'চাকরির বিজ্ঞপ্তি',c:'#6d28d9',k:'deadline'},{id:'offer',e:'🎁',en:'Offer',bn:'অফার',c:'#be185d',k:'deadline'},
  {id:'result',e:'🏆',en:'Result',bn:'ফলাফল',c:'#a16207',k:'plain'},{id:'class',e:'🏫',en:'Class update',bn:'ক্লাস আপডেট',c:'#0f766e',k:'plain'},
  {id:'material',e:'📚',en:'Material',bn:'শিক্ষা উপকরণ',c:'#0369a1',k:'plain'},{id:'certificate',e:'🎓',en:'Certificate',bn:'সার্টিফিকেট',c:'#b45309',k:'plain'}];
-const S={tab:HOME,ann:[],inbox:[],users:[],cfg:{},me:null,edit:null,open:null,f:'',un:[],roleSel:'student',complete:false,ready:{},rc:{},sy:0,pending:null,draft:null,notifOff:false,upd:null,updBusy:false,results:[],sub:'students',af:{stage:'current',course:'',batch:''},ff:'all',rs:{batch:'',exam:'',total:100}};
+const S={tab:HOME,ann:[],inbox:[],users:[],cfg:{},me:null,edit:null,open:null,f:'',un:[],roleSel:'student',complete:false,ready:{},rc:{},sy:0,pending:null,draft:null,notifOff:false,upd:null,updBusy:false,results:[],sub:'students',af:{stage:'current',course:'',batch:''},ff:'all',rs:{batch:'',exam:'',total:100},tpls:[],sendMode:'new',tplEdit:null,dr:null,pvUrl:null};
 const hexOk=c=>/^#[0-9a-f]{6}$/i.test(c||'')?c:'#0b6b2b';
 const getTypes=()=>Array.isArray(S.cfg.types)&&S.cfg.types.length?S.cfg.types:BASE;
 const tyOf=id=>getTypes().find(x=>x.id===id)||BASE.find(x=>x.id===id)||{id,e:'📌',en:String(id),bn:String(id),c:'#0b6b2b',k:'plain'};
@@ -240,7 +249,7 @@ if(native){
   CapApp.addListener('backButton',()=>{
     if(!S.user||(!ADMIN&&!S.me)||S.complete)return CapApp.exitApp();
     if(S.open)return goBack();
-    if(S.edit){S.edit=null;return render()}
+    if(S.edit||S.tplEdit){S.edit=null;S.draft=null;if(S.tplEdit)S.sendMode='tpl';S.tplEdit=null;return render()}
     if(S.tab!==HOME){S.tab=HOME;S.f='';return render()}
     CapApp.exitApp();
   });
@@ -276,7 +285,7 @@ async function run(btn,fn){ // spinner + disabled while an action is running (bl
   try{return await fn()}
   finally{if(btn.isConnected){btn.innerHTML=html;btn.classList.remove('busy');btn.disabled=false;delete btn.dataset.busy}}
 }
-const LONG=new Set(['gg','fg','resend','ssave','bsave','bdone','bcert','bdel','rmuser','reset']);
+const LONG=new Set(['tsend','savetpl','gg','fg','resend','ssave','bsave','bdone','bcert','bdel','rmuser','reset']);
 const loadV=msg=>{app.innerHTML=`<div class="boot"><img class="a-logo pulse" src="logo.png" alt=""><div class="sp lg"></div><p>${msg||T('loading')}</p></div>`};
 /* ---------- auth screens ---------- */
 const langBtn=cls=>`<button class="lang ${cls||''}" data-act="lang">${lang==='bn'?'EN':'বাং'}</button>`;
@@ -333,9 +342,10 @@ function completeV(){
 
 /* ---------- main views ---------- */
 const chip=a=>{const t=tyOf(a.type);return `<span class="chip" style="--c:${hexOk(t.c)}">${t.e} ${esc(tl(t))}</span>`};
+const cdChip=a=>{const d=a.deadline||a.from;if(!d)return'';const n=Math.round((new Date(d+'T00:00:00')-new Date(new Date().toDateString()))/864e5);if(n<0||n>60)return'';return `<span class="chip cd ${n<=1?'u':''}">⏳ ${n===0?T('cdToday'):n===1?T('cdTomorrow'):n+' '+T('cdDays')}</span>`};
 const isExp=a=>a.deadline&&new Date(a.deadline+'T23:59:59')<new Date();
 const rcBadge=a=>ADMIN&&a.status!=='scheduled'?`<span class="rc" data-rc="${a.id}">${ic('eye',13)} <b>${S.rc[a.id]??'–'}</b></span>`:'';
-const badges=a=>`${a.status==='scheduled'?`<span class="chip sch">${ic('clock',12)} ${fmt(a.sendAt)}</span>`:''}${!ADMIN&&!seen().includes(a.id)?`<span class="chip nw">${T('isNew')}</span>`:''}${isExp(a)?`<span class="chip ex">${T('expired')}</span>`:''}${a.pinned?`<span class="pinb">${ic('pin',14)}</span>`:''}`;
+const badges=a=>`${a.status==='scheduled'?`<span class="chip sch">${ic('clock',12)} ${fmt(a.sendAt)}</span>`:''}${!ADMIN&&!seen().includes(a.id)?`<span class="chip nw">${T('isNew')}</span>`:''}${isExp(a)?`<span class="chip ex">${T('expired')}</span>`:cdChip(a)}${a.pinned?`<span class="pinb">${ic('pin',14)}</span>`:''}`;
 const meta=a=>[a.org?`${ic('jobs',14)} ${esc(a.org)}`:'',a.deadline?`${ic('cal',14)} ${T('deadline')}: ${fday(a.deadline)}`:'',a.from?`${ic('cal',14)} ${fday(a.from)}${a.to?' → '+fday(a.to):''}`:''].filter(Boolean).map(x=>`<span>${x}</span>`).join('');
 const audLbl=a=>a.al?esc(a.al):(({student:T('allStudents'),public:T('allCustomers'),all:T('everyone')})[a.audience?.[0]]||`${a.audience?.length||0} ${T('ppl')}`);
 const card=a=>`<article class="card ${ADMIN?'':'tap'}" data-id="${a.id}" data-open="1" data-item>
@@ -352,9 +362,10 @@ const detailV=a=>`<button class="back" data-act="back">${ic('back',18)} ${T('bac
   ${(a.files||[]).map(x=>`<a class="fl" href="${esc(x.u)}" target="_blank" rel="noopener">${ic('clip',18)} ${esc(x.n)}</a>`).join('')}
   <div class="foot"><small>${fmt(a.createdAt)}</small><span><button class="ib ${saved().includes(a.id)?'on':''}" data-id="${a.id}" data-act="save">${ic('bm',18)}</button><button class="ib" data-id="${a.id}" data-act="share">${ic('share',18)}</button></span></div></div></article>`;
 const unread=()=>all().filter(a=>a.status!=='scheduled'&&!seen().includes(a.id)).length;
+const greet=()=>{const h=new Date().getHours();return h<5||h>=21?'gNight':h<12?'gMorning':h<17?'gAfternoon':'gEvening'};
 const dueCard=()=>S.me.role==='student'&&S.me.due>0?`<div class="due"><div><b>${T('dueTitle')}: ৳${esc(S.me.due)}</b><small>${T('dueHint')}</small></div>${S.cfg.phone?`<a class="mini" href="tel:${esc(S.cfg.phone)}">${ic('phone',18)}</a>`:''}</div>`:'';
 const hero=()=>{const n=unread();
-  return `<section class="hero">${avatar(S.me,'sm')}<div class="hn"><small>${T('hi')} 👋</small><h2>${esc(S.me.name)}</h2></div><div class="stat"><b>${n}</b><small>${T('unread')}</small></div></section>
+  return `<section class="hero">${avatar(S.me,'sm')}<div class="hn"><small>${T(greet())} 👋</small><h2>${esc(S.me.name)}</h2></div><div class="stat"><b>${n}</b><small>${T('unread')}</small></div></section>
   ${dueCard()}`};
 const searchBox=(id,ph)=>`<div class="sb">${ic('search',18)}<input class="q" data-q="${id}" placeholder="${ph||T('search')}"></div>`;
 const skel=()=>Array(3).fill('<div class="card sk"><div class="cv"></div><div class="cb"><i></i><i class="w"></i><i class="s"></i></div></div>').join('');
@@ -370,6 +381,44 @@ function feedV(jobsOnly){
   return `${ADMIN||jobsOnly?'':hero()}${warn}${stats}${searchBox('feed')}${n?`<button class="lnk readall" data-act="readall">✓ ${T('markAll')} (${n})</button>`:''}${chips}<div id="feed">${body}</div>`;
 }
 const linkRow=(l={})=>`<div class="two lk"><input placeholder="${T('btnName')}" value="${esc(l.t)}"><input placeholder="https://…" value="${esc(l.u)}"></div>`;
+/* ---------- saved templates ---------- */
+const APPN='SCTC Resources Hub';
+const tplList=()=>S.tpls||[];
+const saveTpls=async l=>{online();await setDoc(doc(db,'settings','templates'),{list:l});S.tpls=l};
+const sendTabs=()=>S.edit||S.tplEdit?'':`<div class="seg3 two">${[['new',T('newTab')],['tpl',`⭐ ${T('tplTab')} (${tplList().length})`]].map(([k,n])=>`<button data-act="smode" data-k="${k}" class="${S.sendMode===k?'on':''}">${n}</button>`).join('')}</div>`;
+const previewBox=()=>`<div class="npvw"><small>${T('preview')}</small><div id="npv" class="npv"></div></div>`;
+const tplCards=()=>tplList().map(t=>`<div class="card tpl" data-id="${esc(t.id)}">${t.cover?`<div class="cv"><img src="${esc(cld(t.cover,600,300))}" loading="lazy" alt=""></div>`:''}<div class="cb"><div class="r1">${chip(t)}</div><h3>⭐ ${esc(t.name)}</h3><p class="ex">${esc(t.title)} — ${esc(t.body)}</p>${t.al?`<small>→ ${esc(t.al)}</small>`:''}
+  <div class="row"><button class="primary" data-act="tsend">⚡ ${T('sendNow')}</button><button data-act="tuse">${T('useTpl')}</button><button data-act="tedit">${T('edit')}</button><button data-act="tdel" class="dng">${T('del')}</button></div></div></div>`).join('')||`<div class="empty">${ic('list',40)}<p>${T('noTpl')}</p></div>`;
+const tplV=()=>`${sendTabs()}<button class="btn ghost sm" data-act="tnew">${T('newTplB')}</button>${tplCards()}`;
+function updPreview(f){
+  const e=document.getElementById('npv');if(!e)return;
+  const base=S.edit||S.draft||{},file=f.cvr.files[0];
+  if(S.pvUrl){URL.revokeObjectURL(S.pvUrl);S.pvUrl=null}
+  let src='';if(file){S.pvUrl=URL.createObjectURL(file);src=S.pvUrl}else if(!f.rmcover?.checked&&base.cover)src=cld(base.cover,600,300);
+  const t=tyOf(f.typ.value);
+  e.innerHTML=`<img class="nl" src="logo.png" alt=""><div class="nb"><small>${APPN} · ${t.e} ${esc(tl(t))}</small><b>${esc(f.ttl.value||T('title'))}</b><p>${esc((f.msg.value||T('message')).slice(0,160))}</p>${src?`<img class="nc" src="${esc(src)}" alt="">`:''}</div>`;
+}
+function formTouched(f){if(!S.edit&&!S.draft&&!S.tplEdit)S.dr={ttl:f.ttl.value,msg:f.msg.value,typ:f.typ.value,aud:f.aud.value};updPreview(f)}
+async function collect(f,base){ // reads the compose form into a post object (uploads new files)
+  const cv=f.cvr.files[0],fl=[...f.att.files];
+  if(fl.length>5)throw Error(T('errMax5'));const big=fl.find(x=>x.size>1e7);if(big)throw Error(big.name+' '+T('errBig'));
+  const ty=f.typ.value,k=tyOf(ty).k||'plain',hol=k==='dates',jb=k==='deadline';
+  const keep=(base.files||[]).filter((_,i)=>f.querySelector(`.kf[value="${i}"]`)?.checked);
+  const files=[...keep,...await Promise.all(fl.map(async x=>({n:x.name,u:await up(x)})))];
+  if(files.length>5)throw Error(T('errMax5'));
+  return {title:f.ttl.value.trim(),body:f.msg.value.trim(),type:ty,sub:tlab(ty),...audOf(f),pinned:f.pn.checked,push:f.nt?f.nt.checked:true,
+    cover:cv?await up(cv):(f.rmcover?.checked?'':base.cover||''),from:hol?f.hf.value:'',to:hol?f.ht.value:'',org:jb?f.og.value.trim():'',deadline:jb?f.dl.value:'',
+    links:[...f.querySelectorAll('.lk')].map(r=>({t:r.children[0].value.trim(),u:r.children[1].value.trim()})).filter(l=>l.t&&/^https?:\/\//i.test(l.u)),files};
+}
+async function doTplSave(f,keep){
+  const name=(f.tname?.value||'').trim();if(!name)throw Error(T('errTplName'));
+  const a=await collect(f,S.edit||S.draft||{});
+  const id=S.tplEdit&&S.tplEdit!=='new'?S.tplEdit:'t'+Date.now().toString(36);
+  const t={id,name,type:a.type,title:a.title,body:a.body,cover:a.cover||'',links:a.links,files:a.files,audience:a.audience,al:a.al||'',pinned:!!a.pinned,org:a.org||''};
+  const l=tplList();await saveTpls(l.some(x=>x.id===id)?l.map(x=>x.id===id?t:x):[...l,t]);
+  toast(T('tplSaved'));
+  if(!keep){S.tplEdit=null;S.draft=null;S.dr=null;S.sendMode='tpl';render()}
+}
 const TPL=[
  {ty:'class',en:['Class cancelled today','Today\u2019s class is cancelled. We will inform you about the next class soon.'],bn:['আজ ক্লাস বন্ধ','আজকের ক্লাস বন্ধ থাকবে। পরবর্তী ক্লাসের তারিখ শীঘ্রই জানানো হবে।']},
  {ty:'exam',en:['Exam notice','The exam will be held on [date] at [time]. Please come on time with your ID card.'],bn:['পরীক্ষার নোটিশ','পরীক্ষা [তারিখ] তারিখে [সময়] এ অনুষ্ঠিত হবে। অনুগ্রহ করে আইডি কার্ডসহ সময়মতো উপস্থিত হবেন।']},
@@ -377,9 +426,9 @@ const TPL=[
  {ty:'fee',en:['Fee reminder','Please pay your due course fee as soon as possible. Thank you.'],bn:['ফি রিমাইন্ডার','অনুগ্রহ করে বকেয়া কোর্স ফি দ্রুত পরিশোধ করুন। ধন্যবাদ।']},
  {ty:'result',en:['Result published','The result has been published. Please check with your instructor.'],bn:['ফলাফল প্রকাশিত','ফলাফল প্রকাশ করা হয়েছে। বিস্তারিত জানতে শিক্ষকের সাথে যোগাযোগ করুন।']}];
 const composeV=()=>{
-  const a=S.edit||S.draft||{},canSch=!S.edit||a.status==='scheduled',nt=!S.edit||a.status==='scheduled';
+  const a=S.edit||S.draft||{},tpe=!!S.tplEdit,canSch=!tpe&&(!S.edit||a.status==='scheduled'),nt=!S.edit||a.status==='scheduled';
   const tys=getTypes().some(t=>t.id===a.type)||!a.type?getTypes():[...getTypes(),tyOf(a.type)];
-  return `<form id="send" class="sec"><h3 class="sh">${ic('send',20)} ${S.edit?T('editAnn'):T('newAnn')}</h3>
+  return `${sendTabs()}${previewBox()}<form id="send" class="sec"><h3 class="sh">${ic('send',20)} ${tpe?(S.tplEdit==='new'?T('newTpl'):T('editTpl')):S.edit?T('editAnn'):T('newAnn')}</h3>
   <div class="two"><div><label>${T('sendTo')}</label><select name="aud"><option value="student">${T('allStudents')}</option><option value="cs">${T('curStudents')}</option><option value="os">${T('oldStudents')}</option><option value="public">${T('allCustomers')}</option><option value="all">${T('everyone')}</option><option value="course">${T('courseOpt')}</option><option value="batch">${T('batchOpt')}</option><option value="users">${T('peopleOpt')}</option></select></div>
   <div><label>${T('type')}</label><select name="typ">${tys.map(t=>`<option value="${esc(t.id)}">${t.e} ${esc(tl(t))}</option>`).join('')}</select></div></div>
   <div id="cx" class="ul" hidden>${courses().map(c=>`<label class="ck"><input type="checkbox" class="cc" value="${esc(c.id)}" ${a.audience?.includes('c_'+c.id)?'checked':''}> ${esc(c.name)}</label>`).join('')}</div>
@@ -387,17 +436,21 @@ const composeV=()=>{
   <div id="pw" hidden>${searchBox('ul')}<div id="ul" class="ul">${S.users.map(u=>`<label class="ck pk" data-item><input type="checkbox" class="uc" value="${esc(u.id)}" ${a.audience?.includes('u_'+u.id)?'checked':''}>${avatar(u,'xs')}<span>${esc(u.name)}<small>${u.role==='student'?esc(courseName(u.course)||T('student'))+(batchOf(u.batchId)?' · '+esc(batchOf(u.batchId).name):'')+(u.stage==='old'?' · '+T('stOld'):''):T('customer')} · ${esc(u.village)}</small></span></label>`).join('')||T('noUsers')}</div></div>
   <div id="hol" hidden><div class="two"><div><label>${T('holFrom')}</label><input type="date" name="hf" value="${esc(a.from)}"></div><div><label>${T('holTo')}</label><input type="date" name="ht" value="${esc(a.to)}"></div></div></div>
   <div id="jb" hidden><label>${T('orgLbl')}</label><input name="og" value="${esc(a.org)}"><label>${T('dl')}</label><input type="date" name="dl" value="${esc(a.deadline)}"></div>
-  ${S.edit?'':`<label class="ck" id="rmb" hidden><input type="checkbox" name="rm" checked> ${T('remind')}</label>`}
-  ${S.edit?'':`<label>${T('tplT')}</label><div class="chips">${TPL.map((t,i)=>`<button type="button" data-act="tpl" data-i="${i}">${tyOf(t.ty).e} ${esc(t[lang][0])}</button>`).join('')}</div>`}
+  ${S.edit||tpe?'':`<label class="ck" id="rmb" hidden><input type="checkbox" name="rm" checked> ${T('remind')}</label>`}
+  ${S.edit||tpe?'':`<label>${T('tplT')}</label><div class="chips">${tplList().map(t=>`<button type="button" data-act="tuse" data-id="${esc(t.id)}">⭐ ${esc(t.name)}</button>`).join('')}${TPL.map((t,i)=>`<button type="button" data-act="tpl" data-i="${i}">${tyOf(t.ty).e} ${esc(t[lang][0])}</button>`).join('')}</div>`}
+  ${tpe?`<label>${T('tplName')}</label><input name="tname" required maxlength="60" value="${esc(a.name)}">`:''}
   <label>${T('title')}</label><input name="ttl" required maxlength="100" value="${esc(a.title)}">
   <label>${T('message')}</label><textarea name="msg" rows="6" placeholder="${T('msgPh')}">${esc(a.body)}</textarea>
   <label>${T('cover')}</label><input name="cvr" type="file" accept="image/*">
+  ${a.cover?`<div class="cvkeep"><img src="${esc(cld(a.cover,200,120))}" alt=""><label class="ck"><input type="checkbox" name="rmcover"> ${T('rmCover')}</label></div>`:''}
   <label>${ic('link',14)} ${T('links')}</label><div id="lks">${(a.links?.length?a.links:[{}]).map(linkRow).join('')}</div><button type="button" class="btn ghost sm" data-act="addlink">${T('addLink')}</button>
   <label>${T('attach')}</label><input name="att" type="file" multiple accept="application/pdf,image/*">
+  ${(a.files||[]).map((x,i)=>`<label class="ck"><input type="checkbox" class="kf" value="${i}" checked> 📎 ${esc(x.n)}</label>`).join('')}
   ${canSch?`<label>${ic('clock',14)} ${T('schedule')}</label><input type="datetime-local" name="sch" value="${a.sendAt?.toDate?toLoc(a.sendAt.toDate()):''}">`:''}
   <label class="ck"><input type="checkbox" name="pn" ${a.pinned?'checked':''}> ${T('pin')}</label>
-  <label class="ck"><input type="checkbox" name="nt" ${nt?'checked':''}> ${T('pushOpt')}</label>
-  <button class="btn send">${S.edit?T('saveChanges'):T('sendBtn')}</button>${S.edit?`<button type="button" class="btn ghost" data-act="cancel">${T('cancelEdit')}</button>`:''}</form>`;
+  ${tpe?'':`<label class="ck"><input type="checkbox" name="nt" ${nt?'checked':''}> ${T('pushOpt')}</label>`}
+  <button class="btn send">${tpe?T('saveTplBtn'):S.edit?T('saveChanges'):T('sendBtn')}</button>${S.edit||tpe?`<button type="button" class="btn ghost" data-act="cancel">${T('cancelEdit')}</button>`:''}
+  ${tpe?'':`<details class="tsave"><summary>${T('saveTpl')}</summary><input name="tname" placeholder="${T('tplName')}" maxlength="60"><button type="button" class="btn ghost sm" data-act="savetpl">${T('saveTplBtn')}</button></details>`}</form>`;
 };
 const stChip=m=>`<span class="chip ${m.stage==='old'?'ex':''}">${m.stage==='old'?T('stOld'):T('stCur')}</span>`;
 const opt=(v,t,sel)=>`<option value="${esc(v)}" ${sel?'selected':''}>${esc(t)}</option>`;
@@ -484,9 +537,14 @@ const setV=()=>themeBox()+`<form id="set" class="sec"><h3 class="sh">${ic('set',
   <label>${T('workerUrl')}</label><input name="w" type="url" placeholder="https://sctc-push.xxx.workers.dev" value="${esc(S.cfg.workerUrl)}">
   <label>${T('phone')}</label><input name="tel" type="tel" value="${esc(S.cfg.phone)}"><label>${T('gradeScale')}</label><input name="gs" value="${esc(S.cfg.grades||GRADES0)}"><button class="btn">${T('saveForm')}</button></form>
   <form id="courses" class="sec"><h3 class="sh">${ic('cap',20)} ${T('coursesT')}</h3><small class="hint">${T('coursesHint')}</small><div id="crows">${courses().map(crow).join('')}</div><button type="button" class="btn ghost sm" data-act="addcourse">${T('addCourse')}</button><button class="btn">${T('saveForm')}</button></form>
+  <div class="sec"><h3 class="sh">${ic('list',20)} ${T('tplSet')}</h3>${tplCards()}<button class="btn ghost sm" data-act="tnew">${T('newTplB')}</button></div>
   <form id="types" class="sec"><h3 class="sh">${ic('list',20)} ${T('typesTitle')}</h3><small class="hint">${T('typesHint')}</small><div id="trows">${getTypes().map(typeRow).join('')}</div>
   <button type="button" class="btn ghost sm" data-act="addtype">${T('addType')}</button><button class="btn">${T('saveForm')}</button><button type="button" class="btn ghost sm" data-act="resettypes">${T('resetTypes')}</button></form>${outBtn()}${verLine()}`;
-const meV=()=>profF(S.me,false)+contact()+`<details class="tips"><summary>${T('tipsT')}</summary><p>${T('tipsB')}</p></details>`+themeBox()+outBtn()+verLine();
+const idCode=uid=>('SCTC-'+hash(uid).toUpperCase().padStart(6,'0')).slice(0,11);
+const idCard=()=>{const m=S.me,stu=m.role==='student',b=batchOf(m.batchId);
+  return `<div class="idc"><div class="idh"><img src="logo.png" alt=""><div><b>${APPN}</b><small>Sabuj Computer Training Center</small></div><span>${stu?T('idStudent'):T('idMember')}</span></div>
+  <div class="idb">${avatar(m,'idp')}<div class="idi"><h3>${esc(m.name)}</h3>${stu?`<p>${esc(courseName(m.course)||'—')}${b?' · '+esc(b.name):''}</p>`:''}<p>📞 ${esc(m.mobile||'—')}</p><p class="idn">${idCode(S.user.uid)}</p></div></div>${stu?`<div class="idf">${m.stage==='old'?T('stOld'):T('stCur')}</div>`:''}</div>`};
+const meV=()=>idCard()+profF(S.me,false)+contact()+`<button class="btn ghost" data-act="shareapp">${ic('share',18)} ${T('shareApp')}</button>`+`<details class="tips"><summary>${T('tipsT')}</summary><p>${T('tipsB')}</p></details>`+themeBox()+outBtn()+verLine();
 
 function render(){
   if(!S.user)return;
@@ -495,12 +553,15 @@ function render(){
   bar('green');
   const stu=!ADMIN&&S.me.role==='student';
   const tabs=ADMIN?[['send','send',T('send')],['posts','list',T('posts')],['acad','cap',T('academy')],['users','users',T('users')],['set','set',T('settings')]]:[['home','home',T('home')],...(stu?[['edu','cap',T('study')]]:[]),['jobs','jobs',T('jobs')],['me','user',T('profile')]];
-  const body=({send:composeV,posts:()=>feedV(false),acad:acadV,users:usersV,set:setV,home:()=>feedV(false),edu:eduV,jobs:()=>feedV(true),me:meV}[S.tab]||(()=>feedV(false)))();
+  const body=({send:()=>S.sendMode==='tpl'&&!S.tplEdit&&!S.edit?tplV():composeV(),posts:()=>feedV(false),acad:acadV,users:usersV,set:setV,home:()=>feedV(false),edu:eduV,jobs:()=>feedV(true),me:meV}[S.tab]||(()=>feedV(false)))();
   const n=ADMIN?0:unread();
   app.innerHTML=`<header><img src="logo.png" alt=""><div class="ht"><b>${NAME}</b></div>${langBtn()}</header><div id="net" ${navigator.onLine?'hidden':''}>${T('offBanner')}</div><div id="upd">${updBar()}</div><main>${body}</main>
   <nav>${tabs.map(([k,i,l])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}"><span class="ni">${ic(i,22)}${k==='home'&&n?`<em>${n>99?'99+':n}</em>`:''}</span>${l}</button>`).join('')}</nav>`;
   const f=document.getElementById('send');
-  if(f){const a=S.edit||S.draft;if(a){f.typ.value=a.type;const x=a.audience?.[0]||'student';f.aud.value=x.startsWith('u_')?'users':x.startsWith('b_')?'batch':x.startsWith('c_')?'course':x}viewSel(f)}
+  if(f){const a=S.edit||S.draft;
+    if(a){if(a.type)f.typ.value=a.type;if(a.audience?.length){const x=a.audience[0];f.aud.value=x.startsWith('u_')?'users':x.startsWith('b_')?'batch':x.startsWith('c_')?'course':x}}
+    else if(S.dr){f.ttl.value=S.dr.ttl;f.msg.value=S.dr.msg;if(S.dr.typ)f.typ.value=S.dr.typ;if(S.dr.aud)f.aud.value=S.dr.aud}
+    viewSel(f);updPreview(f)}
   if(ADMIN&&S.tab==='posts')loadCounts();
 }
 function viewSel(f){
@@ -527,14 +588,11 @@ function audOf(f){
 async function doSend(f){
   try{
     online();
-    const old=S.edit||{},base=S.edit||S.draft||{},cv=f.cvr.files[0],fl=[...f.att.files];
-    if(fl.length>5)throw Error(T('errMax5'));const big=fl.find(x=>x.size>1e7);if(big)throw Error(big.name+' '+T('errBig'));
+    if(S.tplEdit)return await doTplSave(f,false);
+    const old=S.edit||{},base=S.edit||S.draft||{};
     const sch=f.sch?.value?new Date(f.sch.value):null;if(sch&&sch<=new Date())throw Error(T('errFuture'));
-    const ty=f.typ.value,k=tyOf(ty).k||'plain',hol=k==='dates',jb=k==='deadline';
-    const a={title:f.ttl.value.trim(),body:f.msg.value.trim(),type:ty,sub:tlab(ty),...audOf(f),pinned:f.pn.checked,push:f.nt.checked,
-      cover:cv?await up(cv):base.cover||'',from:hol?f.hf.value:'',to:hol?f.ht.value:'',org:jb?f.og.value.trim():'',deadline:jb?f.dl.value:'',status:sch?'scheduled':'sent',
-      links:[...f.querySelectorAll('.lk')].map(r=>({t:r.children[0].value.trim(),u:r.children[1].value.trim()})).filter(l=>l.t&&/^https?:\/\//i.test(l.u)),
-      files:[...(base.files||[]),...await Promise.all(fl.map(async x=>({n:x.name,u:await up(x)})))].slice(0,5)};
+    const a=await collect(f,base);a.status=sch?'scheduled':'sent';
+    const k=tyOf(a.type).k||'plain',hol=k==='dates',jb=k==='deadline';
     if(sch)a.sendAt=Timestamp.fromDate(sch);else if(old.sendAt)a.sendAt=deleteField();
     let id=old.id;
     if(id){if(old.status==='scheduled'&&!sch)a.createdAt=serverTimestamp();await updateDoc(doc(db,'announcements',id),a)}
@@ -547,7 +605,7 @@ async function doSend(f){
       if(r>new Date()){await addDoc(collection(db,'announcements'),{...a,title:T('reminder')+': '+a.title,body:(T('tomorrow')+' '+a.body).trim(),pinned:false,push:true,status:'scheduled',sendAt:Timestamp.fromDate(r),createdAt:serverTimestamp()});m+=T('remSet')}
       else m+=T('remLate');
     }
-    toast(m);S.edit=null;S.draft=null;S.tab='posts';S.rc={};render();
+    toast(m);S.edit=null;S.draft=null;S.dr=null;S.tab='posts';S.rc={};render();
   }catch(x){toast(err(x))}
 }
 async function doFee(f){
@@ -610,19 +668,33 @@ const ACT={
   async logout(){
     if(native&&!ADMIN&&S.user&&S.me){for(const t of new Set([...topicsOf(S.me),...jget('tp','[]'),'student','public','cs','os']))try{await FirebaseMessaging.unsubscribeFromTopic({topic:t})}catch{}
       try{await updateDoc(doc(db,'users',S.user.uid),{fcm:deleteField()})}catch{}}
-    clr();S.me=null;S.ann=[];S.inbox=[];S.users=[];S.results=[];S.open=null;S.edit=null;S.complete=false;S.ready={};S.rc={};S.tab=HOME;jset('tp','[]');
+    clr();S.me=null;S.ann=[];S.inbox=[];S.users=[];S.tpls=[];S.dr=null;S.tplEdit=null;S.results=[];S.open=null;S.edit=null;S.complete=false;S.ready={};S.rc={};S.tab=HOME;jset('tp','[]');
     try{if(native)await FirebaseAuthentication.signOut()}catch{}
     await signOut(auth);
   },
-  back(){goBack()},cancel(){S.edit=null;S.draft=null;render()},flt(_,el){S.f=el.dataset.k;render()},
+  back(){goBack()},cancel(){if(S.tplEdit)S.sendMode='tpl';S.edit=null;S.draft=null;S.tplEdit=null;render()},flt(_,el){S.f=el.dataset.k;render()},
   save(id){const s=saved(),on=!s.includes(id);jset('saved',on?[...s,id]:s.filter(x=>x!==id));
     if(S.f==='__saved'&&!on&&!S.open)return render();
     document.querySelectorAll('[data-act="save"]').forEach(b=>{if(b.closest('[data-id]')?.dataset.id===id)b.classList.toggle('on',on)})},
+  async shareapp(){const url=REPO?`https://github.com/${REPO}/releases/tag/student`:location.href;try{if(navigator.share)await navigator.share({title:APPN,text:T('shareTxt'),url});else{await navigator.clipboard.writeText(url);toast(T('copied'))}}catch{}},
   async share(id){const a=all().find(x=>x.id===id);if(!a)return;const txt=`${a.title}\n${a.body||''}`.slice(0,500);
     try{if(navigator.share)await navigator.share({title:a.title,text:txt});else{await navigator.clipboard.writeText(txt);toast(T('copied'))}}catch{}},
   readall(){jset('seen',[...new Set([...seen(),...all().filter(a=>a.status!=='scheduled').map(a=>a.id)])].slice(-400));render()},
   async notifreq(){try{await FirebaseMessaging.requestPermissions();await checkNotif();if(S.notifOff)toast(T('notifHow'),6000);else{reg(S.me);render()}}catch{}},
   dup(id){const a=S.ann.find(x=>x.id===id);S.draft={...a,sendAt:undefined,status:'sent',pinned:false};S.edit=null;S.tab='send';render();scrollTo(0,0)},
+  smode(_,el){S.sendMode=el.dataset.k;S.edit=null;S.draft=null;S.tplEdit=null;render()},
+  tuse(id){const t=tplList().find(x=>x.id===id);if(!t)return;S.draft={...t};S.edit=null;S.tplEdit=null;S.sendMode='new';S.tab='send';render();scrollTo(0,0)},
+  tedit(id){const t=tplList().find(x=>x.id===id);if(!t)return;S.tplEdit=id;S.draft={...t};S.edit=null;S.tab='send';render();scrollTo(0,0)},
+  tnew(){S.tplEdit='new';S.draft={};S.edit=null;S.tab='send';render();scrollTo(0,0)},
+  async tdel(id){if(!confirm(T('tplDelC')))return;await saveTpls(tplList().filter(x=>x.id!==id));render()},
+  async tsend(id){
+    const t=tplList().find(x=>x.id===id);if(!t)return;
+    if(!t.audience?.length)return toast(T('tplNoAud'),5000);
+    if(!confirm(T('tplSendC').replace('{n}',t.name).replace('{a}',t.al||'')))return;online();
+    const a={title:t.title,body:t.body,type:t.type,sub:tlab(t.type),audience:t.audience,al:t.al||'',pinned:!!t.pinned,push:true,cover:t.cover||'',from:'',to:'',org:t.org||'',deadline:'',status:'sent',links:t.links||[],files:t.files||[]};
+    const r=await addDoc(collection(db,'announcements'),{...a,createdAt:serverTimestamp()});await notify(a,r.id);S.rc={};toast(T('sentOk'));
+  },
+  async savetpl(_,el){const f=el.closest('form');if(!f.checkValidity())return f.reportValidity();online();await doTplSave(f,true)},
   tpl(_,el){const t=TPL[+el.dataset.i],f=document.getElementById('send');f.ttl.value=t[lang][0];f.msg.value=t[lang][1];if(getTypes().some(x=>x.id===t.ty))f.typ.value=t.ty;viewSel(f)},
   addlink(){document.getElementById('lks').insertAdjacentHTML('beforeend',linkRow())},
   addtype(){document.getElementById('trows').insertAdjacentHTML('beforeend',typeRow({id:'c'+Date.now().toString(36),e:'📌',en:'',bn:'',c:'#0b6b2b',k:'plain'}))},
@@ -667,7 +739,7 @@ const ACT={
 app.onclick=async e=>{
   if(e.target.closest('a'))return;
   const tb=e.target.closest('[data-tab]');
-  if(tb){S.tab=tb.dataset.tab;S.open=null;S.edit=null;S.draft=null;S.f='';if(S.tab==='posts')S.rc={};render();return scrollTo(0,0)}
+  if(tb){S.tab=tb.dataset.tab;S.open=null;S.edit=null;S.draft=null;S.tplEdit=null;S.f='';if(S.tab==='posts')S.rc={};render();return scrollTo(0,0)}
   const el=e.target.closest('[data-act]');
   if(el){const h=el.closest('[data-id],[data-uid],[data-bid]'),a=el.dataset.act,go=()=>ACT[a](h?.dataset.id||h?.dataset.uid||h?.dataset.bid||el.dataset.id,el);try{await (LONG.has(a)?run(el,go):go())}catch(x){toast(err(x))}return}
   const c=e.target.closest('[data-open]');if(c&&!ADMIN){openPost(c.dataset.id);render();scrollTo(0,0)}
@@ -708,22 +780,26 @@ app.onsubmit=e=>{e.preventDefault();const f=e.target,h=FORMS[f.id];if(!h)return;
   run(e.submitter||f.querySelector('button:not([type="button"])'),()=>h(f))};
 
 app.onchange=async e=>{const el=e.target;
+  if(el.form?.id==='send')formTouched(el.form);
   if(el.name==='rbatch'){const f=el.form;S.rs={batch:el.value,exam:f.exam.value,total:f.total.value};return render()}
   if(el.dataset.af){S.af[el.dataset.af]=el.value;return render()}
   if(el.name==='aud'||el.name==='typ')viewSel(el.form);
   if(el.name==='r'&&el.form?.id==='prof'){const s=el.value==='student',f=el.form;f.querySelector('.n-stu').hidden=!s;f.querySelector('.n-cus').hidden=s;f.v.required=s;f.querySelector('.crs').hidden=!s;f.crs.required=s;f.querySelector('.vl').textContent=s?T('village'):T('address')}
   if(el.dataset.role){try{const id=el.closest('[data-uid]').dataset.uid,u=S.users.find(x=>x.id===id);online();await updateDoc(doc(db,'users',id),{role:el.value});const d=u&&diffTopics(id,u,{...u,role:el.value});if(d)await pushTopics([d]);toast(T('updated'))}catch(x){toast(err(x))}}};
 app.oninput=e=>{const el=e.target;
+  if(el.form?.id==='send')formTouched(el.form);
   if(el.classList.contains('gd')){el.dataset.man=el.value?'1':''}
   if(el.classList.contains('mk')||el.name==='total'){const f=el.closest('form'),tot=+f.total.value;f.querySelectorAll('.rrow').forEach(r=>{const mk=r.querySelector('.mk'),gd=r.querySelector('.gd');if(!gd.dataset.man)gd.value=mk.value===''||!(tot>0)?'':gradeOf(+mk.value,tot)});return}
   if(!el.dataset.q)return;const v=el.value.toLowerCase();
   document.querySelectorAll(`#${el.dataset.q} [data-item]`).forEach(n=>{n.hidden=!n.textContent.toLowerCase().includes(v)})};
 
+app.onkeydown=e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'&&e.target.form?.id==='send')e.preventDefault()}; // Enter must never send a notification by accident
+
 /* ---------- boot ---------- */
 function start(){
   clr();S.ready={};const u=S.user.uid,ud=[];
   const ls=(q,k)=>onSnapshot(q,s=>{S[k]=s.docs.map(d=>({id:d.id,...d.data()}));S.ready[k]=true;soft()},x=>{console.warn(x);S.ready[k]=true;soft()});
-  if(ADMIN){ud.push(ls(collection(db,'announcements'),'ann'),ls(collection(db,'users'),'users'))}
+  if(ADMIN){ud.push(ls(collection(db,'announcements'),'ann'),ls(collection(db,'users'),'users'),onSnapshot(doc(db,'settings','templates'),t=>{S.tpls=t.data()?.list||[];soft()},()=>{}))}
   else{
     ud.push(onSnapshot(doc(db,'users',u),s=>{const m=s.data();if(!m)return;const ch=S.me&&tkey(S.me)!==tkey(m);S.me=m;ch?start():soft()}),
       ls(query(collection(db,'announcements'),where('audience','array-contains-any',topicsOf(S.me))),'ann'),
